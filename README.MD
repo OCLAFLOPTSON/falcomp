@@ -5,6 +5,10 @@ It provides a structured interface for interacting with devices over serial, man
 
 ---
 
+Gratuity is not necessary but can be directed to http://buymeacoffee.com/timfalco
+
+---
+
 ## Features
 
 - **Device Discovery**
