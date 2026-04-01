@@ -5,7 +5,7 @@ It provides a structured interface for interacting with devices over serial, man
 
 ---
 
-Gratuity is not necessary but can be directed to http://buymeacoffee.com/timfalco
+Gratuity is not necessary but may be directed to [Buy Me a Coffee](http://buymeacoffee.com/timfalco)
 
 ---
 
@@ -78,6 +78,7 @@ falco-mp
    - Open REPL
    - Sync files
    - Manage filesystem
+   - Generate Typings/Stubs
 
 ---
 
@@ -93,6 +94,7 @@ Example structure:
   "serial": "<device serial if applicable>",
   "verify-on-sync": true,
   "preserve-device-files": false,
+  "print_sync_report": true,
   "ignore": ["typings", "__pycache__"],
   "notes": []
 }

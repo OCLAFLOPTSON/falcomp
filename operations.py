@@ -15,11 +15,9 @@ from serial import Serial
 from falco_mp.falcomp.color_theme import ANSITAG
 from falco_mp.falcomp.keys import key_incoming, read_key
 
-def file_hash(path):
+def file_hash(file: str):
     h = sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            h.update(chunk)
+    h.update(file.encode())
     return h.hexdigest()
 
 def size():
@@ -72,6 +70,7 @@ class Config:
             'serial': serial,
             'confirm-on-sync': True,
             'preserve-device-files': False,
+            'print_sync_report': True,
             'ignore': [
                 "env/",
                 "typings/",
@@ -489,22 +488,17 @@ class MPCommands:
         def _r_check(cwd, out):
             def _hash_device_file(port, path):
                 script = [
-                    'from hashlib import sha256\n',
-                    'from binascii import hexlify\n',
-                    'h = sha256()\n',
-                    f'with open("{path}", "rb") as f:\n',
-                    '    while True:\n',
-                    '        chunk = f.read(4096)\n',
-                    '        if not chunk:\n',
-                    '            break\n',
-                    '        h.update(chunk)\n',
-                    'print(hexlify(h.digest()).decode())'
+                    f'with open("{path}", "r") as f:\n',
+                    '    print(f.readlines())'
                 ]
                 try:
-                    return check_output(
+                    _file = check_output(
                         mp_command(port, execute=''.join(script)),
                         text=True
                     )
+                    _f = eval(_file)
+                    _file = '\n'.join(_f)
+                    return file_hash(_file)
                 except CalledProcessError as e:
                     print(e.output)
 
@@ -544,22 +538,29 @@ class MPCommands:
         '''
         print(f"{ANSITAG.color(60, 60, 100)}::filescan:: Scanning local working directory{ANSITAG.reset}\n")
         root = Path.cwd()
-        ignore = Config.get(port).get('ignore')
+        config = Config.get(port)
+        ignore = config.get('ignore')
 
         def _scan(path: Path, ignore: list):
             out = {'files': {}, 'folders': {}}
             for p in path.iterdir():
-                if p.name in ignore:
-                    continue
+                
                 if p.is_file():
+                    if p.name in ignore:
+                        continue
+                    with open(str(p.relative_to(root).as_posix()), 'r') as f:
+                        _file = f.readlines()
+                    _file = '\n'.join(_file)
                     out['files'][p.name] = {
                         'size': p.stat().st_size,
                         'path': str(p.relative_to(root).as_posix()),
-                        'hash': file_hash(str(p.relative_to(root).as_posix()))
+                        'hash': file_hash(_file)
                     }
 
                 elif p.is_dir():
                     name = p.name+"/"
+                    if name in ignore:
+                        continue
                     out['folders'][name] = {
                         'size': 0,
                         'path': str(p.relative_to(root)).replace("\\", "/")+"/",
@@ -631,8 +632,10 @@ class MPCommands:
                 MPCommands.delete_file(port, path)
 
             for name in sorted(local_keys & peripheral_keys): # exists, exists
+                path = local_files[name]["path"]
+                if path in ignore:
+                    continue
                 if local_files[name]["hash"] != peripheral_files[name]["hash"]:
-                    path = local_files[name]["path"]
                     diff["files_modified"].append(path)
                     print(f"::update:: {name}")
                 
@@ -641,7 +644,7 @@ class MPCommands:
                         text=True
                     )
 
-            # FILES
+            # Folders
             local_folders = _local.get("folders", {})
             peripheral_folders = _peripheral.get("folders", {})
 

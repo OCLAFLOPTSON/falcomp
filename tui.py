@@ -260,11 +260,12 @@ class Menu(object):
     def run(self, data: dict|None=None):
         if self.on_startup and not self.active:
             self.on_startup(self, data if data else self.data)
+        if data:
+            mssg = data.get("mssg")
+        else:
+            mssg = None
         self.active = True
         current = ''
-
-        # if self.menu:
-        #     self.menu[len(self.menu)-1].active = True
 
         while self.active:
             if key_incoming():
@@ -275,4 +276,6 @@ class Menu(object):
                     self.clear()
                     current = new
                     print(new)
+                    if mssg:
+                        print(mssg)
                 sleep(self.interval)

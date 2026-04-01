@@ -396,7 +396,7 @@ def go_back_one(menu: Menu, data: dict):
     else:
         _p.pop()
         _p.pop()
-    menu.CWD = "/".join(_p) if len(_p) else "/"
+    menu.CWD = "/".join(_p)+"/" if len(_p) else "/"
     menu.on_startup(menu, data)
     menu.run()
 
@@ -426,17 +426,34 @@ def run_repl(menu: Menu, data: dict):
 def sync_files(menu: Menu, data):
     def _sync(menu, data):
         port = data.get('port')
-        MPCommands.sync_working_directory(port)
+        config = data.get('config', dict())
+        report: dict = MPCommands.sync_working_directory(port)
+        menu.CWD = "/"
         menu.on_startup(menu, menu.data)
-        menu.run()
+        _m = config.get("print_sync_resport")
+        mssg = f"""
+        Final Sync Report:
+            Files Added:
+                {report.get("files_added", "None")}
+            Files Removed:
+                {report.get("files_removed", "None")}
+            Files Modified:
+                {report.get("files_modified", "None")}
+            Directories Added:
+                {report.get("folders_added", "None")}
+            Directories Removed:
+                {report.get("folders_removed", "None")}
+        """ if _m else None
+        menu.run({"mssg": mssg})
         
     def _dont_sync(menu: Menu, data):
         menu.on_startup(menu, menu.data)
         menu.run()
         
     port = data.get("port")
+    config = Config.get(port)
 
-    if Config.get(port)["confirm-on-sync"]:
+    if config["confirm-on-sync"]:
         for row in menu.menu:
             if row.active:
                 row.active = False
@@ -449,7 +466,10 @@ def sync_files(menu: Menu, data):
                 Button(
                     label=Text("yes", italic=True),
                     action=_sync,
-                    data={"port": port}
+                    data={
+                        "port": port,
+                        "config": config
+                    }
                 ),
                 Button(
                     label=Text("no", italic=True),
@@ -475,9 +495,24 @@ def sync_files(menu: Menu, data):
                     print(new)
                 sleep(menu.interval)
         
-    MPCommands.sync_working_directory(port)
+    report = MPCommands.sync_working_directory(port)
     menu.on_startup(menu, menu.data)
-    menu.run()
+    
+    _m = config.get("print_sync_resport")
+    mssg = f"""
+    Final Sync Report:
+        Files Added:
+            {report.get("files_added", "None")}
+        Files Removed:
+            {report.get("files_removed", "None")}
+        Files Modified:
+            {report.get("files_modified", "None")}
+        Directories Added:
+            {report.get("folders_added", "None")}
+        Directories Removed:
+            {report.get("folders_removed", "None")}
+    """ if _m else None
+    menu.run({"mssg": mssg})
 
 def generate_stubs(menu: Menu, data: dict):
     port = data.get('port')
