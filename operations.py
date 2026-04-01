@@ -497,7 +497,7 @@ class MPCommands:
                         text=True
                     )
                     _f = eval(_file)
-                    _file = '\n'.join(_f)
+                    _file = ''.join(_f).replace("\r\n", '\n')
                     return file_hash(_file)
                 except CalledProcessError as e:
                     print(e.output)
@@ -550,7 +550,8 @@ class MPCommands:
                         continue
                     with open(str(p.relative_to(root).as_posix()), 'r') as f:
                         _file = f.readlines()
-                    _file = '\n'.join(_file)
+                    _file = ''.join(_file)
+                    _file = _file.replace("\r\n", "\n")
                     out['files'][p.name] = {
                         'size': p.stat().st_size,
                         'path': str(p.relative_to(root).as_posix()),
