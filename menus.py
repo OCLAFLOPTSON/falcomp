@@ -524,10 +524,15 @@ def _device_menu_startup(menu: Menu, data: dict):
     port = menu.data.get("port")
     device_config = Config.get(port)
     cols, rows = size()
+    strge = MPCommands.get_device_details(port)['storage']
+    total = str(int(strge.get('total', 0))/1000000)
+    used = str(int(strge.get('used', 0))/1000000)
+    avail = str(int(strge.get('free', 0))/1000000)
+    specs = f"Flash: {total[:4]}MB - Used: {used[:4]}MB - Available: {avail[:4]}MB"
 
     menu.menu.append(PaddedRow(
         parent=menu,
-        label=Text(f'Device: {device_config.get("name")}({port})'),
+        label=Text(f'Device: {device_config.get("name")}({port}) | {specs}'),
         selectable=False
     ))
     menu.menu.append(PaddedRow(
